@@ -6,6 +6,11 @@ pipeline {
         DOCKER_IMAGE_NAME = 'kemlee95/workflow'
         DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
         RUNNER_NODE = '192.168.226.132'
+        DB_USER = 'postgres'
+        DB_PASSWORD = 'password'
+        DB_NAME = 'test-workflow'
+        DB_HOST = 'database.local.work'
+        DB_PORT = '5432'
     }
     stages {
         stage('Run Test') {
