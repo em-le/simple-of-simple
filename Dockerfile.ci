@@ -1,7 +1,12 @@
 FROM golang:1.22-alpine
 WORKDIR /app
 COPY go.mod .
+COPY go.sum .
 COPY main.go .
 COPY main_test.go .
 RUN go mod download
-CMD ["go", "test", "-v"] 
+RUN go install golang.org/x/lint/golint@latest
+RUN /go/bin/golint ./... && echo 'golint passed.'
+RUN apk add --no-cache gcc musl-dev
+ENV CGO_ENABLED=1
+CMD ["go", "test", "-v"]

@@ -5,14 +5,31 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func TestRegisterHandler(t *testing.T) {
-	// Reset users map for test isolation
-	users = make(map[string]string)
+func setupTestDB(t *testing.T) {
+	var err error
+	db, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to connect to test database: %v", err)
+	}
+	if err := db.AutoMigrate(&User{}); err != nil {
+		t.Fatalf("failed to migrate test database: %v", err)
+	}
+}
 
-	// Successful register
-	body := bytes.NewBufferString(`{"username":"testuser","password":"testpass"}`)
+func clearUsersTable(t *testing.T) {
+	db.Exec("DELETE FROM users")
+}
+
+func TestRegisterHandler(t *testing.T) {
+	setupTestDB(t)
+	clearUsersTable(t)
+
+	body := bytes.NewBufferString(`{"firstName":"Test","lastName":"User","email":"testuser@example.com","password":"testpass"}`)
 	req := httptest.NewRequest(http.MethodPost, "/register", body)
 	w := httptest.NewRecorder()
 	registerHandler(w, req)
@@ -20,8 +37,7 @@ func TestRegisterHandler(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	// Register with existing user
-	body = bytes.NewBufferString(`{"username":"testuser","password":"testpass"}`)
+	body = bytes.NewBufferString(`{"firstName":"Test","lastName":"User","email":"testuser@example.com","password":"testpass"}`)
 	req = httptest.NewRequest(http.MethodPost, "/register", body)
 	w = httptest.NewRecorder()
 	registerHandler(w, req)
@@ -29,7 +45,6 @@ func TestRegisterHandler(t *testing.T) {
 		t.Errorf("expected 409, got %d", w.Code)
 	}
 
-	// Invalid method
 	req = httptest.NewRequest(http.MethodGet, "/register", nil)
 	w = httptest.NewRecorder()
 	registerHandler(w, req)
@@ -39,10 +54,12 @@ func TestRegisterHandler(t *testing.T) {
 }
 
 func TestLoginHandler(t *testing.T) {
-	users = map[string]string{"testuser": "testpass"}
+	setupTestDB(t)
+	clearUsersTable(t)
+	// Create user in DB
+	db.Create(&User{FirstName: "Test", LastName: "User", Email: "testuser@example.com", Password: "testpass"})
 
-	// Successful login
-	body := bytes.NewBufferString(`{"username":"testuser","password":"testpass"}`)
+	body := bytes.NewBufferString(`{"email":"testuser@example.com","password":"testpass"}`)
 	req := httptest.NewRequest(http.MethodPost, "/login", body)
 	w := httptest.NewRecorder()
 	loginHandler(w, req)
@@ -50,8 +67,7 @@ func TestLoginHandler(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	// Wrong password
-	body = bytes.NewBufferString(`{"username":"testuser","password":"wrong"}`)
+	body = bytes.NewBufferString(`{"email":"testuser@example.com","password":"wrong"}`)
 	req = httptest.NewRequest(http.MethodPost, "/login", body)
 	w = httptest.NewRecorder()
 	loginHandler(w, req)
@@ -59,8 +75,7 @@ func TestLoginHandler(t *testing.T) {
 		t.Errorf("expected 401, got %d", w.Code)
 	}
 
-	// User not found
-	body = bytes.NewBufferString(`{"username":"nouser","password":"testpass"}`)
+	body = bytes.NewBufferString(`{"email":"nouser@example.com","password":"testpass"}`)
 	req = httptest.NewRequest(http.MethodPost, "/login", body)
 	w = httptest.NewRecorder()
 	loginHandler(w, req)
@@ -68,7 +83,6 @@ func TestLoginHandler(t *testing.T) {
 		t.Errorf("expected 401, got %d", w.Code)
 	}
 
-	// Invalid method
 	req = httptest.NewRequest(http.MethodGet, "/login", nil)
 	w = httptest.NewRecorder()
 	loginHandler(w, req)
@@ -79,18 +93,16 @@ func TestLoginHandler(t *testing.T) {
 
 func TestLogoutHandler(t *testing.T) {
 	sessions = make(map[string]string)
-	sessions["testuser_session"] = "testuser"
+	sessions["testuser@example.com_session"] = "testuser@example.com"
 
-	// Successful logout
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
-	req.AddCookie(&http.Cookie{Name: "session_id", Value: "testuser_session"})
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "testuser@example.com_session"})
 	w := httptest.NewRecorder()
 	logoutHandler(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	// No session cookie
 	req = httptest.NewRequest(http.MethodPost, "/logout", nil)
 	w = httptest.NewRecorder()
 	logoutHandler(w, req)
@@ -98,7 +110,6 @@ func TestLogoutHandler(t *testing.T) {
 		t.Errorf("expected 401, got %d", w.Code)
 	}
 
-	// Invalid method
 	req = httptest.NewRequest(http.MethodGet, "/logout", nil)
 	w = httptest.NewRecorder()
 	logoutHandler(w, req)

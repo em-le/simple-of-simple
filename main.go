@@ -4,12 +4,22 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"sync"
+	"time"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID        uint64 `gorm:"primaryKey;autoIncrement"`
+	FirstName string `gorm:"size:64;not null" json:"firstName"`
+	LastName  string `gorm:"size:64;not null" json:"lastName"`
+	Email     string `gorm:"unique;size:128;not null" json:"email"`
+	Password  string `gorm:"size:255;not null" json:"password"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Response struct {
@@ -17,10 +27,30 @@ type Response struct {
 }
 
 var (
-	users    = make(map[string]string)
 	sessions = make(map[string]string)
 	mu       sync.Mutex
+	db       *gorm.DB
 )
+
+func initDB() {
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	if dbUser == "" || dbPassword == "" || dbHost == "" || dbPort == "" || dbName == "" {
+		log.Fatal("Database environment variables are not set properly")
+	}
+	dsn := "host=" + dbHost + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " port=" + dbPort + " sslmode=disable TimeZone=UTC"
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect database: %v", err)
+	}
+	if err := db.AutoMigrate(&User{}); err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+}
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -33,14 +63,17 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(Response{"Invalid request body"})
 		return
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	if _, exists := users[user.Username]; exists {
+	var existing User
+	if err := db.Where("email = ?", user.Email).First(&existing).Error; err == nil {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(Response{"User already exists"})
 		return
 	}
-	users[user.Username] = user.Password
+	if err := db.Create(&user).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{"Failed to create user"})
+		return
+	}
 	json.NewEncoder(w).Encode(Response{"Register successful"})
 }
 
@@ -49,21 +82,27 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var reqUser User
+	if err := json.NewDecoder(r.Body).Decode(&reqUser); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(Response{"Invalid request body"})
 		return
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	if pwd, exists := users[user.Username]; !exists || pwd != user.Password {
+	var user User
+	if err := db.Where("email = ?", reqUser.Email).First(&user).Error; err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(Response{"Invalid credentials"})
 		return
 	}
-	sessionID := user.Username + "_session"
-	sessions[sessionID] = user.Username
+	if user.Password != reqUser.Password {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(Response{"Invalid credentials"})
+		return
+	}
+	sessionID := user.Email + "_session"
+	mu.Lock()
+	sessions[sessionID] = user.Email
+	mu.Unlock()
 	http.SetCookie(w, &http.Cookie{
 		Name:  "session_id",
 		Value: sessionID,
@@ -96,6 +135,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	initDB()
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)

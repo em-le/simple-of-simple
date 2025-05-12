@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'DEPLOY_TARGET', defaultValue: '', description: 'Deployment target server')
+    }
+
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
+        DOCKER_IMAGE_NAME = 'kemlee95/workflow'
+        DB_USER = 'sos_user'
+        DB_PASSWORD = 'password'
+        DB_NAME = 'sos_db'
+        DB_HOST = 'database.local.work'
+        DB_PORT = '5432'
+    }
+    stages {
+        stage('Deploy') {
+            agent {
+                label "${params.DEPLOY_TARGET}"
+            }
+            steps {
+                sh 'echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin'
+                sh "docker pull ${DOCKER_IMAGE_NAME}"
+            }
+        }
+    }
+}
