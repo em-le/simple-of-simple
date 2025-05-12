@@ -1,0 +1,7 @@
+FROM golang:1.22-alpine
+WORKDIR /app
+COPY go.mod .
+COPY main.go .
+COPY main_test.go .
+RUN go mod download
+CMD ["go", "test", "-v"] 

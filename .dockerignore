@@ -1,0 +1,10 @@
+# Bỏ qua các file/folder không cần thiết khi build Docker image
+*.go
+!main.go
+go.mod
+go.sum
+*.md
+*.test
+main_test.go
+.git
+.gitignore 
