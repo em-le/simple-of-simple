@@ -8,9 +8,9 @@ pipeline {
     environment {
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
         DOCKER_IMAGE_NAME = 'kemlee95/workflow'
-        DB_USER = 'sos_user'
+        DB_USER = 'postgres'
         DB_PASSWORD = 'password'
-        DB_NAME = 'sos_db'
+        DB_NAME = 'workflow'
         DB_HOST = 'database.local.work'
         DB_PORT = '5432'
     }

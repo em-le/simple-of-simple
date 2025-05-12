@@ -15,9 +15,9 @@ pipeline {
             steps {
                 sh 'echo "Running Go tests in Docker environment..."'
                 sh "docker build -t kemlee95/workflow:test -f Dockerfile.ci ."
-                sh 'export DB_USER=sos_user'
+                sh 'export DB_USER=postgres'
                 sh 'export DB_PASSWORD=password'
-                sh 'export DB_NAME=sos_db'
+                sh 'export DB_NAME=test-workflow'
                 sh 'export DB_HOST=database.local.work'
                 sh 'export DB_PORT=5432'
                 sh "docker run --rm kemlee95/workflow:test"

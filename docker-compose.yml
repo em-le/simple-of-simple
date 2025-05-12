@@ -5,10 +5,10 @@ services:
       context: .
       dockerfile: ./Dockerfile
     environment:
-      - DB_USER=postgres_user
-      - DB_PASSWORD=postgres_password
-      - DB_NAME=postgres_db
-      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=workflow
+      - DB_HOST=database.local.work
       - DB_PORT=5432
     ports:
       - "8080:8080"
@@ -20,9 +20,9 @@ services:
     image: postgres:16
     restart: always
     environment:
-      POSTGRES_DB: postgres_db
-      POSTGRES_USER: postgres_user
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: workflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
@@ -30,7 +30,7 @@ services:
     networks:
       default:
         aliases:
-          - postgres
+          - database.local.work
 
 volumes:
   postgres_data: 
