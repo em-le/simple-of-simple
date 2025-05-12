@@ -14,14 +14,15 @@ pipeline {
             }
             steps {
                 sh 'echo "Running Go tests in Docker environment..."'
-                sh "docker build -t kemlee95/workflow:test -f Dockerfile.ci ."
-                sh 'export DB_USER=postgres'
-                sh 'export DB_PASSWORD=password'
-                sh 'export DB_NAME=test-workflow'
-                sh 'export DB_HOST=database.local.work'
-                sh 'export DB_PORT=5432'
-                sh "docker run --rm kemlee95/workflow:test"
-                sh "docker rmi kemlee95/workflow:test"
+                sh "docker build -t ${DOCKER_IMAGE_NAME}:test -f Dockerfile.ci ."
+                sh "docker run --rm \
+                  -e DB_USER=${DB_USER} \
+                  -e DB_PASSWORD=${DB_PASSWORD} \
+                  -e DB_NAME=${DB_NAME} \
+                  -e DB_HOST=${DB_HOST} \
+                  -e DB_PORT=${DB_PORT} \
+                  ${DOCKER_IMAGE_NAME}:test"
+                sh "docker rmi ${DOCKER_IMAGE_NAME}:test"
             }
         }
 
