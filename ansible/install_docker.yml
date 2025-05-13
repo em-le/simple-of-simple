@@ -1,0 +1,11 @@
+---
+- name: Install Docker on runner
+  hosts:
+    - runner
+    # - database
+    # - dev
+  become_user: root
+  vars_files:
+    - vault.yml
+  roles:
+    - docker

@@ -1,0 +1,18 @@
+---
+- name: Add hosts entries to /etc/hosts
+  hosts: all
+  become: yes
+  become_user: root
+  vars_files:
+    - vault.yml
+  tasks:
+    - name: Ensure custom hosts are present in /etc/hosts
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.226.130 runner.local.work
+          192.168.226.131 gitlab.local.work
+          192.168.226.132 database.local.work
+          192.168.226.133 jenkins.local.work
+          192.168.226.134 dev.local.work
+        marker: "# {mark} ANSIBLE MANAGED HOSTS BLOCK"

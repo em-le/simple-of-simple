@@ -1,0 +1,30 @@
+---
+- name: Ensure /tmp/tools directory exists
+  file:
+    path: /tmp/tools
+    state: directory
+    mode: '0755'
+
+- name: Copy install-docker.sh to remote host
+  copy:
+    src: install-docker.sh
+    dest: /tmp/tools/install-docker.sh
+    mode: '0755'
+
+- name: Run install-docker.sh
+  shell: /tmp/tools/install-docker.sh
+  args:
+    executable: /bin/bash
+
+- name: Post installation
+  shell: |
+    sudo usermod -aG docker ltkem
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+- name: Add multiple users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"

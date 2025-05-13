@@ -1,0 +1,48 @@
+---
+- name: Ensure /tmp/tools directory exists
+  file:
+    path: /tmp/tools
+    state: directory
+    mode: '0755'
+
+- name: Copy install-docker.sh to remote host
+  copy:
+    src: install-jenkins.sh
+    dest: /tmp/tools/install-jenkins.sh
+    mode: '0755'
+
+- name: Run install-jenkins.sh
+  shell: /tmp/tools/install-jenkins.sh
+  args:
+    executable: /bin/bash
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Copy Jenkins Nginx config
+  copy:
+    src: jenkins-nginx.conf
+    dest: /etc/nginx/sites-available/jenkins
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable Jenkins Nginx site
+  file:
+    src: /etc/nginx/sites-available/jenkins
+    dest: /etc/nginx/sites-enabled/jenkins
+    state: link
+    force: yes
+
+- name: Remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Reload nginx
+  service:
+    name: nginx
+    state: reloaded

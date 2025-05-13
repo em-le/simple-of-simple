@@ -2,8 +2,8 @@ version: '3.8'
 services:
   app:
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ./src
+      dockerfile: Dockerfile
     environment:
       - DB_USER=postgres
       - DB_PASSWORD=password

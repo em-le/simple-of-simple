@@ -1,0 +1,4 @@
+new_hostname: dev
+docker_users:
+  - ltkem
+  - jenkins

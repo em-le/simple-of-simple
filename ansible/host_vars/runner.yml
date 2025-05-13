@@ -1,0 +1,4 @@
+new_hostname: runner
+docker_users:
+  - ltkem
+  - jenkins

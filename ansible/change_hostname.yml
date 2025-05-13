@@ -1,0 +1,18 @@
+---
+- name: Change hostname on target hosts
+  hosts: all
+  become: yes
+  become_user: root
+  vars_files:
+    - vault.yml
+  tasks:
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ new_hostname }}"
+
+    - name: Reboot the machine
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible after hostname change."
+        pre_reboot_delay: 5
+        reboot_timeout: 600
+        test_command: whoami
