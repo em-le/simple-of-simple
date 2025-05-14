@@ -1,12 +1,10 @@
 ---
-- name: Install Docker on runner
+- name: Install Gitlab on gitlab
   hosts:
-    - runner
-    - database
-    - dev
+    - gitlab
   become: true
   become_user: root
   vars_files:
     - vault.yml
   roles:
-    - docker
+    - gitlab

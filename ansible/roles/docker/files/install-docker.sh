@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if command -v docker &> /dev/null; then
-  echo "Docker installed, Skip..."
+  echo "Docker already installed, Skip..."
   exit 0
 fi
 

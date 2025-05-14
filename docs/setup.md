@@ -87,6 +87,10 @@ Use the following Ansible playbooks to automate setup tasks. Replace `hosts.ini`
   ansible-playbook -i hosts.ini start_jenkins_agent.yml -vv --ask-vault-pass --ask-become-pass
   ```
 
+- Install Gitlab:
+  ```bash
+  ansible-playbook -i hosts.ini install_gitlab.yml -vv --ask-vault-pass --ask-become-pass
+  ```
 ---
 
 **Note:**  

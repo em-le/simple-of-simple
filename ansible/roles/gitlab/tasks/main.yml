@@ -1,0 +1,21 @@
+---
+
+- name: Ensure /tmp/tools directory exists
+  file:
+    path: /tmp/tools
+    state: directory
+    mode: '0755'
+
+- name: Copy install-gitlab.sh to remote host
+  copy:
+    src: install-gitlab.sh
+    dest: /tmp/tools/install-gitlab.sh
+    mode: '0755'
+
+- name: Run install-gitlab.sh
+  shell: /tmp/tools/install-gitlab.sh
+  environment:
+    EXTERNAL_URL: "{{ gitlab_external_url }}"
+    GITLAB_ROOT_PASSWORD: "{{ gitlab_root_password }}"
+  args:
+    executable: /bin/bash

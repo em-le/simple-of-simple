@@ -1,1 +1,3 @@
 new_hostname: gitlab
+gitlab_external_url: http://gitlab.local.work
+gitlab_root_password: password
