@@ -24,7 +24,7 @@
 
 - name: Copy Jenkins Nginx config
   copy:
-    src: jenkins-nginx.conf
+    src: jenkins.local.work.conf
     dest: /etc/nginx/sites-available/jenkins
     owner: root
     group: root

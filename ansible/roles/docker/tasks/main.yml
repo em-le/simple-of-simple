@@ -16,15 +16,25 @@
   args:
     executable: /bin/bash
 
-- name: Post installation
-  shell: |
-    sudo usermod -aG docker ltkem
-    sudo systemctl enable docker
-    sudo systemctl start docker
-
 - name: Add multiple users to docker group
   user:
     name: "{{ item }}"
     groups: docker
     append: yes
   loop: "{{ docker_users }}"
+
+- name: Configure Docker to ignore IPv6
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "ipv6": false
+      }
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restart docker.service
+  shell: |
+    systemctl enable docker
+    systemctl start docker

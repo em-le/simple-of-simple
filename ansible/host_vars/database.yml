@@ -1,3 +1,4 @@
 new_hostname: database
 docker_users:
   - ltkem
+  - jenkins

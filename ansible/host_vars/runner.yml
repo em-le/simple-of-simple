@@ -2,3 +2,5 @@ new_hostname: runner
 docker_users:
   - ltkem
   - jenkins
+agent_secret: e12458a30f37894e4aaf6c337a6bd480a76c8b4660b89c01d6a678d3febd13b9
+agent_label: runner

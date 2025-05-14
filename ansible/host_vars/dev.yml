@@ -2,3 +2,5 @@ new_hostname: dev
 docker_users:
   - ltkem
   - jenkins
+agent_secret: 1503532911ce320f333a2106924c6c9ba059bf938b1b286fa8c9c753e75a0bde
+agent_label: dev

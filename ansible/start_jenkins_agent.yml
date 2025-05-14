@@ -1,12 +1,11 @@
 ---
-- name: Install Docker on runner
+- name: Start jenkins-agent.service on agents
   hosts:
-    # - runner
-    # - database
+    - runner
     - dev
   become: true
   become_user: root
   vars_files:
     - vault.yml
   roles:
-    - docker
+    - jenkins-agent

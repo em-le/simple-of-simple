@@ -43,13 +43,21 @@ netplan apply
 ```
 
 ```bash
-ansible-playbook -i hosts.ini change_hostname.yml --ask-vault-pass --ask-become-pass
+ansible-playbook -i hosts.ini change_hostname.yml -vv --ask-vault-pass --ask-become-pass
 ```
 
 ```bash
-ansible-playbook -i hosts.ini install_docker.yml -vvv --ask-vault-pass --ask-become-pass
+ansible-playbook -i hosts.ini install_docker.yml -vv --ask-vault-pass --ask-become-pass
 ```
 
 ```bash
-ansible-playbook -i hosts.ini add_hosts.yml --ask-vault-pass --ask-become-pass
+ansible-playbook -i hosts.ini add_hosts.yml -vv --ask-vault-pass --ask-become-pass
+```
+
+```bash
+ansible-playbook -i hosts.ini install_jenkins.yml -vv --ask-vault-pass --ask-become-pass
+```
+
+```bash
+ansible-playbook -i hosts.ini start_jenkins_agent.yml -vv --ask-vault-pass --ask-become-pass
 ```

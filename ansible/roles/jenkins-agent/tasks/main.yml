@@ -1,0 +1,59 @@
+---
+- name: Ensure /var/lib/jenkins directory exists and owned by jenkins
+  file:
+    path: /var/lib/jenkins
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Install fontconfig and openjdk-21-jre
+  apt:
+    name:
+      - fontconfig
+      - openjdk-21-jre
+    state: present
+
+- name: Create secret-file with secret content
+  copy:
+    dest: /var/lib/jenkins/secret-file
+    content: "{{ agent_secret }}"
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+
+- name: Download agent.jar to /var/lib/jenkins
+  get_url:
+    url: http://jenkins.local.work/jnlpJars/agent.jar
+    dest: /var/lib/jenkins/agent.jar
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Copy jenkins-agent.service to remote host
+  copy:
+    dest: /etc/systemd/system/jenkins-agent.service
+    content: |
+      [Unit]
+      Description=Jenkins Agent Service
+      After=network.target
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/var/lib/jenkins
+      ExecStart=/bin/bash -c 'java -jar agent.jar -url http://jenkins.local.work/ -secret @secret-file -name {{ agent_label }} -workDir "/var/lib/jenkins"'
+      User=jenkins
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start jenkins-agent service
+  systemd:
+    name: jenkins-agent
+    state: started
+
