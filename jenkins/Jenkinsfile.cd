@@ -22,8 +22,8 @@ pipeline {
             steps {
                 sh 'echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin'
                 sh "docker pull ${DOCKER_IMAGE_NAME}"
-                sh "docker rm -f simple || true"
-                sh "docker run -d --name simple-app \
+                sh "docker rm -f workflow || true"
+                sh "docker run -d --name workflow \
                   -e DB_USER=${DB_USER} \
                   -e DB_PASSWORD=${DB_PASSWORD} \
                   -e DB_NAME=${DB_NAME} \
