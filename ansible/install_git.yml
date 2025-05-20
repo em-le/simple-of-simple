@@ -1,0 +1,11 @@
+---
+- name: Install Gitlab on gitlab
+  hosts:
+    - jenkins
+    - runner
+  become: true
+  become_user: root
+  vars_files:
+    - vault.yml
+  roles:
+    - git
