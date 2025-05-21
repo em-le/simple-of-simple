@@ -1,11 +1,13 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'RUNNER_LABEL', defaultValue: 'runner', description: 'Runner label')
+    }
+
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
         DOCKER_IMAGE_NAME = 'kemlee95/workflow'
         DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
-        RUNNER_NODE = 'runner'
         DB_USER = 'postgres'
         DB_PASSWORD = 'password'
         DB_NAME = 'test-workflow'
@@ -15,7 +17,7 @@ pipeline {
     stages {
         stage('Run Test') {
             agent {
-                label "${RUNNER_NODE}"
+                label "${params.RUNNER_LABEL}"
             }
             steps {
                 sh 'echo "Running Go tests in Docker environment..."'
@@ -33,7 +35,7 @@ pipeline {
 
         stage('Docker Build') {
             agent {
-                label "${RUNNER_NODE}"
+                label "${params.RUNNER_LABEL}"
             }
             steps {
                 sh 'echo "Building Docker image for Go app..."'
@@ -44,35 +46,40 @@ pipeline {
 
         stage('Docker Push') {
             agent {
-                label "${RUNNER_NODE}"
+                label "${params.RUNNER_LABEL}"
             }
             steps {
                 sh 'echo "Pushing Docker image to Docker Hub..."'
-                sh 'echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin'
-                sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-                sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-                sh 'docker logout'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    sh 'docker logout'
+                }
             }
         }
 
-        stage('Cleanup') {
-            agent {
-                label "${RUNNER_NODE}"
-            }
+        stage('gitlab') {
             steps {
-                sh 'echo "Removing Docker images..."'
-                sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-                sh "docker rmi ${DOCKER_IMAGE_NAME}:latest"
-                sh 'docker system prune -f'
-            }
-        }
-
-        stages {
-            stage('gitlab') {
-                steps {
                 updateGitlabCommitStatus name: 'build', state: 'pending'
                 updateGitlabCommitStatus name: 'build', state: 'success'
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Removing Docker images..."
+            sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
+            sh "docker rmi ${DOCKER_IMAGE_NAME}:latest || true"
+            sh 'docker system prune -f'
+            updateGitlabCommitStatus name: 'build', state: 'pending'
+        }
+        success {
+            updateGitlabCommitStatus name: 'build', state: 'success'
+        }
+        failure {
+            updateGitlabCommitStatus name: 'build', state: 'failed'
         }
     }
 }
