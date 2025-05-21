@@ -25,7 +25,10 @@ pipeline {
                     echo "Checking out branch: ${branchToCheckout}"
                     checkout([$class: 'GitSCM',
                         branches: [[name: "*/${branchToCheckout}"]],
-                        userRemoteConfigs: [[url: 'http://gitlab.local.work/kemlee/simple-of-simple.git']]
+                        userRemoteConfigs: [[
+                            url: 'http://gitlab.local.work/kemlee/simple-of-simple.git',
+                            credentialsId: 'jenkins@local.work'
+                        ]]
                     ])
                 }
             }
