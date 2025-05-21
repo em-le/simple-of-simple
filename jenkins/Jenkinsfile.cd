@@ -14,6 +14,22 @@ pipeline {
         DB_PORT = '5432'
     }
     stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    def branchMap = [
+                        dev: 'development',
+                        prod: 'main'
+                    ]
+                    def branchToCheckout = branchMap[params.DEPLOY_TARGET] ?: 'main'
+                    echo "Checking out branch: ${branchToCheckout}"
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: "*/${branchToCheckout}"]],
+                        userRemoteConfigs: [[url: 'http://gitlab.local.work/kemlee/simple-of-simple.git']]
+                    ])
+                }
+            }
+        }
         stage('Deploy') {
             agent {
                 label "${params.DEPLOY_TARGET}"
@@ -32,6 +48,18 @@ pipeline {
                         ${DOCKER_IMAGE_NAME}"
                 }
             }
+        }
+    }
+        post {
+        always {
+            echo "Deploy Continue..."
+        }
+        success {
+            echo "Deploy Continue..."
+
+        }
+        failure {
+            echo "Deploy Continue..."
         }
     }
 }
