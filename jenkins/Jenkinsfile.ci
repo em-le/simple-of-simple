@@ -51,13 +51,13 @@ pipeline {
             steps {
                 sh 'echo "Pushing Docker image to Docker Hub..."'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     def branchMap = [
                         development: 'development',
                         main: 'latest'
                     ]
                     def dockerTag = branchMap[env.BRANCH_NAME] ?: 'latest'
                     def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     sh "docker push ${dockerImage}"
                     sh 'docker logout'
                 }
