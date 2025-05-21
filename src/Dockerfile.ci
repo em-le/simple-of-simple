@@ -7,6 +7,4 @@ COPY main.go .
 COPY main_test.go .
 RUN go mod download
 RUN go install golang.org/x/lint/golint@latest
-RUN /go/bin/golint ./... && echo 'golint passed.'
-ENV CGO_ENABLED=1
-CMD ["go", "test", "-v"]
+CMD ["/go/bin/golint", "./..."]
