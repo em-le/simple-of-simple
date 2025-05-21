@@ -21,36 +21,44 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    def branchMap = [
-                        dev: 'development',
-                        prod: 'latest'
-                    ]
-                    def dockerTag = branchMap[params.DEPLOY_TARGET] ?: 'latest'
-                    def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
-                    sh "docker pull ${dockerImage}"
-                    sh "docker rm -f workflow || true"
-                    sh "docker run -d --name workflow \
-                        -e DB_USER=${DB_USER} \
-                        -e DB_PASSWORD=${DB_PASSWORD} \
-                        -e DB_NAME=${DB_NAME} \
-                        -e DB_HOST=${DB_HOST} \
-                        -e DB_PORT=${DB_PORT} \
-                        -p 8080:8080 \
-                        ${dockerImage}"
+                    script {
+                        def branchMap = [
+                            dev: 'development',
+                            prod: 'latest'
+                        ]
+                        def dockerTag = branchMap[params.DEPLOY_TARGET] ?: 'latest'
+                        def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
+                        
+                        try {
+                            sh "docker pull ${dockerImage}"
+                            sh "docker rm -f workflow || true"
+                            sh """
+                                docker run -d --name workflow \\
+                                -e DB_USER=${DB_USER} \\
+                                -e DB_PASSWORD=${DB_PASSWORD} \\
+                                -e DB_NAME=${DB_NAME} \\
+                                -e DB_HOST=${DB_HOST} \\
+                                -e DB_PORT=${DB_PORT} \\
+                                -p 8080:8080 \\
+                                ${dockerImage}
+                            """
+                        } catch (Exception e) {
+                            error "Failed to deploy: ${e.message}"
+                        }
+                    }
                 }
             }
         }
     }
-        post {
+    post {
         always {
-            echo "Deploy Continue..."
+            echo "Deploy Complete"
         }
         success {
-            echo "Deploy Continue..."
-
+            echo "Deployment successful"
         }
         failure {
-            echo "Deploy Continue..."
+            echo "Deployment failed"
         }
     }
 }

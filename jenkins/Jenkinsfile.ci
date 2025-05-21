@@ -21,15 +21,22 @@ pipeline {
             }
             steps {
                 sh 'echo "Running Go tests in Docker environment..."'
-                sh "docker build -t ${DOCKER_IMAGE_NAME}:test -f ./src/Dockerfile.ci ./src"
-                sh "docker run --rm \
-                  -e DB_USER=${DB_USER} \
-                  -e DB_PASSWORD=${DB_PASSWORD} \
-                  -e DB_NAME=${DB_NAME} \
-                  -e DB_HOST=${DB_HOST} \
-                  -e DB_PORT=${DB_PORT} \
-                  ${DOCKER_IMAGE_NAME}:test"
-                sh "docker rmi ${DOCKER_IMAGE_NAME}:test"
+                script {
+                    try {
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:test -f ./src/Dockerfile.ci ./src"
+                        sh """
+                            docker run --rm \\
+                            -e DB_USER=${DB_USER} \\
+                            -e DB_PASSWORD=${DB_PASSWORD} \\
+                            -e DB_NAME=${DB_NAME} \\
+                            -e DB_HOST=${DB_HOST} \\
+                            -e DB_PORT=${DB_PORT} \\
+                            ${DOCKER_IMAGE_NAME}:test
+                        """
+                    } finally {
+                        sh "docker rmi ${DOCKER_IMAGE_NAME}:test || true"
+                    }
+                }
             }
         }
 
@@ -52,13 +59,15 @@ pipeline {
                 sh 'echo "Pushing Docker image to Docker Hub..."'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    def branchMap = [
-                        development: 'development',
-                        main: 'latest'
-                    ]
-                    def dockerTag = branchMap[env.BRANCH_NAME] ?: 'latest'
-                    def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
-                    sh "docker push ${dockerImage}"
+                    script {
+                        def branchMap = [
+                            development: 'development',
+                            main: 'latest'
+                        ]
+                        def dockerTag = branchMap[env.BRANCH_NAME] ?: 'latest'
+                        def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
+                        sh "docker push ${dockerImage}"
+                    }
                     sh 'docker logout'
                 }
             }
@@ -68,8 +77,7 @@ pipeline {
     post {
         always {
             echo "Removing Docker images..."
-            sh 'docker system prune -f'
-            updateGitlabCommitStatus name: 'build', state: 'pending'
+            sh 'docker system prune -f || true'
         }
         success {
             updateGitlabCommitStatus name: 'build', state: 'success'
