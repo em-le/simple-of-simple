@@ -66,5 +66,13 @@ pipeline {
                 sh 'docker system prune -f'
             }
         }
+
+        stages {
+            stage('gitlab') {
+                steps {
+                updateGitlabCommitStatus name: 'build', state: 'pending'
+                updateGitlabCommitStatus name: 'build', state: 'success'
+            }
+        }
     }
 }

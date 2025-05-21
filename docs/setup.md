@@ -91,6 +91,11 @@ Use the following Ansible playbooks to automate setup tasks. Replace `hosts.ini`
   ```bash
   ansible-playbook -i hosts.ini install_gitlab.yml -vv --ask-vault-pass --ask-become-pass
   ```
+
+  - Install Gitlab:
+  ```bash
+  ansible-playbook -i hosts.ini install_git.yml -vv --ask-vault-pass --ask-become-pass
+  ```
 ---
 
 **Note:**  
