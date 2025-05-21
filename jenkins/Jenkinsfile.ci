@@ -63,8 +63,6 @@ pipeline {
     post {
         always {
             echo "Removing Docker images..."
-            sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
-            sh "docker rmi ${DOCKER_IMAGE_NAME}:latest || true"
             sh 'docker system prune -f'
             updateGitlabCommitStatus name: 'build', state: 'pending'
         }
