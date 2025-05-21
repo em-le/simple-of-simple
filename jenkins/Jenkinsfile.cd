@@ -14,25 +14,6 @@ pipeline {
         DB_PORT = '5432'
     }
     stages {
-        stage('Checkout') {
-            steps {
-                script {
-                    def branchMap = [
-                        dev: 'development',
-                        prod: 'main'
-                    ]
-                    def branchToCheckout = branchMap[params.DEPLOY_TARGET] ?: 'main'
-                    echo "Checking out branch: ${branchToCheckout}"
-                    checkout([$class: 'GitSCM',
-                        branches: [[name: "*/${branchToCheckout}"]],
-                        userRemoteConfigs: [[
-                            url: 'http://gitlab.local.work/kemlee/simple-of-simple.git',
-                            credentialsId: 'jenkins@local.work'
-                        ]]
-                    ])
-                }
-            }
-        }
         stage('Deploy') {
             agent {
                 label "${params.DEPLOY_TARGET}"
@@ -40,7 +21,13 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh "docker pull ${DOCKER_IMAGE_NAME}"
+                    def branchMap = [
+                        dev: 'development',
+                        prod: 'latest'
+                    ]
+                    def dockerTag = branchMap[params.DEPLOY_TARGET] ?: 'latest'
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
+                    sh "docker pull ${dockerImage}"
                     sh "docker rm -f workflow || true"
                     sh "docker run -d --name workflow \
                         -e DB_USER=${DB_USER} \
@@ -49,7 +36,7 @@ pipeline {
                         -e DB_HOST=${DB_HOST} \
                         -e DB_PORT=${DB_PORT} \
                         -p 8080:8080 \
-                        ${DOCKER_IMAGE_NAME}"
+                        ${dockerImage}"
                 }
             }
         }
