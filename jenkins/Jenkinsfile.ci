@@ -58,13 +58,6 @@ pipeline {
                 }
             }
         }
-
-        stage('gitlab') {
-            steps {
-                updateGitlabCommitStatus name: 'build', state: 'pending'
-                updateGitlabCommitStatus name: 'build', state: 'success'
-            }
-        }
     }
 
     post {
