@@ -22,13 +22,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     script {
-                        def branchMap = [
-                            dev: 'development',
-                            prod: 'latest'
-                        ]
-                        def dockerTag = branchMap[params.DEPLOY_TARGET] ?: 'latest'
+                        def dockerTag = getDockerTag(params.DEPLOY_TARGET)
                         def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
-                        
                         try {
                             sh "docker pull ${dockerImage}"
                             sh "docker rm -f workflow || true"
@@ -39,6 +34,7 @@ pipeline {
                                 -e DB_NAME=${DB_NAME} \\
                                 -e DB_HOST=${DB_HOST} \\
                                 -e DB_PORT=${DB_PORT} \\
+                                -v /etc/hosts:/etc/hosts:ro \\
                                 -p 8080:8080 \\
                                 ${dockerImage}
                             """
@@ -61,4 +57,12 @@ pipeline {
             echo "Deployment failed"
         }
     }
+}
+
+def getDockerTag(target) {
+    def targetMap = [
+        dev: 'development',
+        prod: 'latest'
+    ]
+    return targetMap[target] ?: 'latest'
 }

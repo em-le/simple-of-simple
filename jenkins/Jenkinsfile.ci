@@ -46,8 +46,12 @@ pipeline {
             }
             steps {
                 sh 'echo "Building Docker image for Go app..."'
-                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} -f ./src/Dockerfile.ci ./src"
-                sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${DOCKER_IMAGE_NAME}:latest"
+                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} -f ./src/Dockerfile ./src"
+                script {
+                    def dockerTag = getDockerTag(env.gitlabBranch)
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${dockerImage}"
+                }
             }
         }
 
@@ -60,11 +64,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                     script {
-                        def branchMap = [
-                            development: 'development',
-                            main: 'latest'
-                        ]
-                        def dockerTag = branchMap[env.BRANCH_NAME] ?: 'latest'
+                        def dockerTag = getDockerTag(env.gitlabBranch)
                         def dockerImage = "${DOCKER_IMAGE_NAME}:${dockerTag}"
                         sh "docker push ${dockerImage}"
                     }
@@ -86,4 +86,12 @@ pipeline {
             updateGitlabCommitStatus name: 'build', state: 'failed'
         }
     }
+}
+
+def getDockerTag(branchName) {
+    def branchMap = [
+        development: 'development',
+        main: 'latest'
+    ]
+    return branchMap[branchName] ?: 'latest'
 }
